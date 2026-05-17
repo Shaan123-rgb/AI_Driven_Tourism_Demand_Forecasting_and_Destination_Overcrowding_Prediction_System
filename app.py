@@ -132,6 +132,20 @@ def show_place_search():
                         desc = info.get("desc", "")
                         if desc:
                             st.info(desc)
+                    
+                    # AI Quick Guide button for each place
+                    btn_key = f"ai_guide_{row['Place_Name']}_{row['Location_State']}"
+                    if st.button(f"🧠 Get AI Quick Guide", key=btn_key):
+                        with st.spinner("Generating AI guide..."):
+                            from chatbot import generate_place_summary
+                            guide = generate_place_summary(
+                                row['Place_Name'], row['Location_State'], 
+                                row['Place_Type'], row['Google_Rating']
+                            )
+                            if guide:
+                                st.markdown(guide)
+                            else:
+                                st.write("Configure `GROQ_API_KEY` to unlock AI guides.")
 
 #  PROFILE
 
