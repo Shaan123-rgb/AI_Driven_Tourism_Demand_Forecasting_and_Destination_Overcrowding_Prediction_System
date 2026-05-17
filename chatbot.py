@@ -1,3 +1,5 @@
+
+
 import os
 import streamlit as st
 from groq import Groq
@@ -143,6 +145,31 @@ def generate_comparison_insights(place1: str, state1: str, rating1: float, type1
             model="llama-3.1-8b-instant",
             messages=[
                 {"role": "system", "content": "You are an expert AI travel consultant."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.6,
+            max_tokens=150,
+        )
+        return response.choices[0].message.content
+    except Exception:
+        return ""
+
+def generate_place_summary(place: str, state: str, ptype: str, rating: float) -> str:
+    # generates a short ai-powered travel guide for a specific place.
+    api_key = None
+    try: api_key = st.secrets.get("GROQ_API_KEY")
+    except: pass
+    if not api_key: api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key: return ""
+    
+    prompt = f"Write a short, engaging 3-sentence travel guide for '{place}' (a {ptype} in {state}, India, rated {rating}/5). Include what makes it special, one must-do activity, and the best time of day to visit."
+    
+    try:
+        client = Groq(api_key=api_key)
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": "You are a knowledgeable Indian travel guide. Be specific and vivid."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.6,
