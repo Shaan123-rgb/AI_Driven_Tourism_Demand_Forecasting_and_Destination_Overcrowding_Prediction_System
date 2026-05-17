@@ -160,42 +160,48 @@ def generate_comparison_insights(place1: str, state1: str, rating1: float, type1
 
 def get_hybrid_response(query: str, df: pd.DataFrame) -> str:
     
-    
     # try dataset match first
     dataset_reply = dataset_match(query, df)
     if dataset_reply:
         return dataset_reply
 
     # fallback to keyword search
-    # Replaces slow sentence_transformers to process the query instantly
-    query_lower = query.lower()
+    query_lower = query.lower().strip()
+    
+    # filter out common stopwords so they dont inflate match scores
+    stopwords = {"what", "can", "the", "be", "at", "is", "a", "an", "to", "in",
+                 "for", "of", "do", "how", "i", "my", "me", "you", "it", "this",
+                 "that", "are", "was", "will", "should", "would", "about", "with"}
     query_words = set(''.join(c for c in query_lower if c.isalnum() or c.isspace()).split())
+    query_content_words = query_words - stopwords
     
     best_match = None
     best_score = 0
     
     for item in CHATBOT_KB:
+        # greeting intent should only trigger on very short, exact-style matches
+        if item.get("intent") == "greeting":
+            for q in item["questions"]:
+                if query_lower == q.lower().strip():
+                    return item['answer']
+            continue  # skip greeting from keyword scoring entirely
+        
         for q in item["questions"]:
             q_clean = ''.join(c for c in q.lower() if c.isalnum() or c.isspace())
+            q_words = set(q_clean.split()) - stopwords
             
-            # Exact match check (e.g. for "Hi", "Hello")
-            if query_lower == q_clean:
-                return item['answer']
-                
-            q_words = set(q_clean.split())
-            if not q_words:
+            if not q_words or not query_content_words:
                 continue
                 
-            # Calculate Jaccard-like similarity
-            overlap = len(q_words.intersection(query_words))
+            overlap = len(q_words.intersection(query_content_words))
             score = overlap / max(len(q_words), 1)
             
             if score > best_score:
                 best_score = score
                 best_match = item['answer']
                 
-    if best_score >= 0.5 and best_match:  # If at least half the words match
+    if best_score >= 0.5 and best_match:
         return best_match
         
-    # 3. Tier 3: Groq Fallback
+    # Tier 3: Groq Fallback for anything the KB cant handle
     return get_groq_fallback(query)
