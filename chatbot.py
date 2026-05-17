@@ -1,5 +1,3 @@
-
-
 import os
 import streamlit as st
 from groq import Groq
@@ -168,10 +166,14 @@ def get_hybrid_response(query: str, df: pd.DataFrame) -> str:
     # fallback to keyword search
     query_lower = query.lower().strip()
     
-    # filter out common stopwords so they dont inflate match scores
+    # filter out common stopwords AND generic travel words so only
+    # specific terms (like destination names) drive KB matches
     stopwords = {"what", "can", "the", "be", "at", "is", "a", "an", "to", "in",
                  "for", "of", "do", "how", "i", "my", "me", "you", "it", "this",
-                 "that", "are", "was", "will", "should", "would", "about", "with"}
+                 "that", "are", "was", "will", "should", "would", "about", "with",
+                 "best", "time", "visit", "travel", "trip", "go", "going", "places",
+                 "place", "tell", "know", "want", "need", "good", "india", "during",
+                 "when", "where", "which", "some", "any", "there", "here", "also"}
     query_words = set(''.join(c for c in query_lower if c.isalnum() or c.isspace()).split())
     query_content_words = query_words - stopwords
     
