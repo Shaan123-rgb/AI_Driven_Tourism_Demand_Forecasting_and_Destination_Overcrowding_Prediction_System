@@ -515,8 +515,9 @@ def show_advanced_analytics():
             st.info("Weather_Type or Tourist_Type missing for Sankey diagram.")
 
     with col4:
-        # 4. Violin Plot
-        fig4 = px.violin(df, y="Visitors_Count", x="Location_State", color="Location_State",
+        # 4. Violin Plot (Sampled for performance)
+        plot_df = df.sample(n=min(10000, len(df)), random_state=42) if len(df) > 10000 else df
+        fig4 = px.violin(plot_df, y="Visitors_Count", x="Location_State", color="Location_State",
                          box=True, points=False,
                          title="Distribution of Visitors Count Across States")
         fig4.update_layout(xaxis_title="State", yaxis_title="Visitors Count", showlegend=False)
@@ -562,10 +563,17 @@ def show_advanced_analytics():
         st.caption("Insight: Here the XGBoost Regressor model has been used to determine the key factors driving the demand forecast.")
 
     with colB:
-        # 2. Value Proposition Matrix (Price vs Rating)
+        # 2. Value Proposition Matrix (Price vs Rating) - Aggregated by Place for performance
         val_df = df.dropna(subset=['Google_Rating', 'Ticket_Price', 'Visitors_Count', 'Place_Type']).copy()
         
-        figB = px.scatter(val_df, x='Google_Rating', y='Ticket_Price', 
+        # Aggregate by place to drastically reduce browser rendering load (from 132k points to ~400 points)
+        agg_val_df = val_df.groupby(['Place_Name', 'Place_Type']).agg({
+            'Google_Rating': 'median',
+            'Ticket_Price': 'median',
+            'Visitors_Count': 'mean'
+        }).reset_index()
+        
+        figB = px.scatter(agg_val_df, x='Google_Rating', y='Ticket_Price', 
                           size='Visitors_Count', color='Place_Type',
                           hover_name='Place_Name',
                           title="Value Proposition Matrix (Price vs Rating)",
@@ -573,8 +581,8 @@ def show_advanced_analytics():
                           size_max=40)
         
         # Add quadrant lines (using medians as dividers)
-        median_rating = val_df['Google_Rating'].median()
-        median_price = val_df['Ticket_Price'].median()
+        median_rating = agg_val_df['Google_Rating'].median()
+        median_price = agg_val_df['Ticket_Price'].median()
         figB.add_vline(x=median_rating, line_width=1, line_dash="dash", line_color="gray")
         figB.add_hline(y=median_price, line_width=1, line_dash="dash", line_color="gray")
         
