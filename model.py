@@ -3,10 +3,10 @@
 import pandas as pd
 import numpy as np
 import streamlit as st
-from sklearn.ensemble        import RandomForestRegressor
+from xgboost import XGBRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing   import StandardScaler, LabelEncoder
-from sklearn.metrics         import mean_absolute_error, r2_score
+from sklearn.preprocessing   import LabelEncoder
+from sklearn.metrics         import mean_absolute_error, mean_squared_error, r2_score
 from utils import load_data, get_season, DESTINATION_INFO
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -64,20 +64,22 @@ def predict_intelligence(destination: str, travel_date):
     return result
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Internal helpers
+# Internal helpers — Feature Preparation for XGBoost
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _prepare_features(df: pd.DataFrame):
-    # return (x, y_demand, feature_cols, encoders, place_means).
+    """Prepare features for the XGBoost model.
+    Returns (X, y_demand, feature_cols, encoders, place_means, global_mean).
+    """
     d = df.copy()
 
     # Pre-calculate place means for relative comparison
     place_means = d.groupby("Place_Name")["Visitors_Count"].mean().to_dict()
     global_mean = d["Visitors_Count"].mean()
 
-    # Categorical Encoding
+    # ── Categorical Encoding ─────────────────────────────────────────────
     cat_cols = ["Place_Name", "Location_State", "Place_Type", "Season", 
-                "Day_of_Week", "Weather_Type", "Is_Weekend"]
+                "Day_of_Week", "Weather_Type", "Is_Weekend", "Tourist_Type"]
     
     encoders = {}
     for col in cat_cols:
@@ -89,8 +91,10 @@ def _prepare_features(df: pd.DataFrame):
             d[col] = le.transform(d[col].astype(str))
             encoders[col] = le
 
-    # Numeric Features
-    num_cols = ["Google_Rating", "Ticket_Price", "Review_Count_Lakhs"]
+    # ── Numeric Features (expanded for improved dataset) ─────────────────
+    num_cols = ["Google_Rating", "Ticket_Price", "Review_Count_Lakhs",
+                "Hotel_Occupancy_Rate", "Month_Num", "Year",
+                "Is_Event", "Has_Airport"]
     for col in num_cols:
         if col in d.columns:
             d[col] = pd.to_numeric(d[col], errors="coerce").fillna(0)
@@ -106,12 +110,14 @@ def _prepare_features(df: pd.DataFrame):
     return X, y, feature_cols, encoders, place_means, global_mean
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Model cache
+# Model cache — XGBoost Regressor
 # ─────────────────────────────────────────────────────────────────────────────
 
 @st.cache_resource(show_spinner=False)
 def train_models():
-    # train regression model for demand; use it to derive crowd labels.
+    """Train XGBoost regression model for demand forecasting.
+    Cached as a resource so it persists across reruns.
+    """
     df = load_data()
     if df.empty:
         return None
@@ -122,22 +128,38 @@ def train_models():
         X, y, test_size=0.15, random_state=42
     )
 
-    # Use a strong Random Forest Regressor
-    rf_reg = RandomForestRegressor(n_estimators=100, max_depth=15, random_state=42, n_jobs=-1)
-    rf_reg.fit(X_train, y_train)
+    # ── XGBoost Regressor — Production Configuration ─────────────────────
+    xgb_reg = XGBRegressor(
+        n_estimators=300,
+        learning_rate=0.05,
+        max_depth=8,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        random_state=42,
+        n_jobs=-1,
+        tree_method="hist",          # fast histogram-based training
+        verbosity=0,
+    )
+    xgb_reg.fit(X_train, y_train)
     
-    y_pred = rf_reg.predict(X_test)
-    r2 = r2_score(y_test, y_pred)
+    y_pred = xgb_reg.predict(X_test)
+    r2   = r2_score(y_test, y_pred)
+    mae  = mean_absolute_error(y_test, y_pred)
+    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
 
     return {
-        "rf_reg":       rf_reg,
+        "xgb_reg":      xgb_reg,
         "encoders":     encoders,
         "feature_cols": feature_cols,
         "place_means":  place_means,
         "global_mean":  global_mean,
+        "X_test":       X_test,
+        "y_test":       y_test,
+        "y_pred":       y_pred,
         "metrics": {
-            "r2": round(r2, 4),
-            "mae": round(mean_absolute_error(y_test, y_pred), 2)
+            "r2":   round(r2, 4),
+            "mae":  round(mae, 2),
+            "rmse": round(rmse, 2),
         }
     }
 
@@ -157,6 +179,10 @@ def predict(state: str, place_type: str, season: str,
     # Precise Day name
     day_name = travel_date.strftime("%A") if travel_date else ("Saturday" if is_weekend else "Wednesday")
     
+    # Month number from travel date
+    month_num = travel_date.month if travel_date else 6
+    year_val  = travel_date.year if travel_date else 2025
+    
     # Feature Input
     raw = {
         "Place_Name":           place_name,
@@ -166,9 +192,15 @@ def predict(state: str, place_type: str, season: str,
         "Day_of_Week":          day_name,
         "Weather_Type":         weather,
         "Is_Weekend":           "Yes" if is_weekend else "No",
+        "Tourist_Type":         "Domestic",
         "Google_Rating":        rating,
         "Ticket_Price":         ticket_price,
         "Review_Count_Lakhs":   1.0,
+        "Hotel_Occupancy_Rate": 50.0,
+        "Month_Num":            month_num,
+        "Year":                 year_val,
+        "Is_Event":             0,
+        "Has_Airport":          1,
     }
 
     enc = models["encoders"]
@@ -183,8 +215,8 @@ def predict(state: str, place_type: str, season: str,
 
     X_input = pd.DataFrame([row])[models["feature_cols"]]
 
-    # Predict Demand
-    demand = int(models["rf_reg"].predict(X_input)[0])
+    # Predict Demand using XGBoost
+    demand = int(models["xgb_reg"].predict(X_input)[0])
     
     # Compare with Place Mean to determine Crowd Level
     avg = models["place_means"].get(place_name, models["global_mean"])

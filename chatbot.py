@@ -234,3 +234,42 @@ def get_hybrid_response(query: str, df: pd.DataFrame) -> str:
         
     # Tier 3: Groq Fallback for anything the KB cant handle
     return get_groq_fallback(query)
+
+def generate_crowd_management_strategies(state: str, avg_visitors: int) -> str:
+    """Uses Groq to generate dynamic crowd management strategies for a high-risk state."""
+    api_key = None
+    try:
+        api_key = st.secrets.get("GROQ_API_KEY")
+    except Exception:
+        pass
+        
+    if not api_key:
+        api_key = os.environ.get("GROQ_API_KEY")
+        
+    if not api_key:
+        return "Configure `GROQ_API_KEY` in .env to unlock AI-generated crowd strategies."
+        
+    try:
+        client = Groq(api_key=api_key)
+        prompt = f"""
+        You are a Senior Tourism Manager and Crowd Control Expert.
+        The Indian state/territory of '{state}' is currently flagged as HIGH RISK for overcrowding, with an average of {avg_visitors:,} visitors across its top destinations.
+        
+        Provide exactly 4 highly specific, actionable, and innovative crowd management strategies for the local government and tourism boards to handle this surge in {state}.
+        Make the strategies specifically relevant to the geography, culture, and types of tourism typically found in {state}.
+        
+        Format as bullet points. Do not include an intro or conclusion paragraph. Just the 4 bullet points.
+        """
+        
+        response = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": "You are a tourism crowd control expert."},
+                {"role": "user", "content": prompt}
+            ],
+            model="llama-3.1-8b-instant",
+            temperature=0.7,
+            max_tokens=1000
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"Could not generate strategies at this time. (Error: {str(e)})"

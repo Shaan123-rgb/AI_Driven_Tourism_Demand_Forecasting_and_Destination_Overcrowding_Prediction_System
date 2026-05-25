@@ -7,7 +7,7 @@ import os
 import plotly.io as pio
 import plotly.graph_objects as go
 
-DATASET_PATH = "dataset/travel_data.csv"
+DATASET_PATH = "dataset/improved_tourism_dataset.csv"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Plotly styling — crisp white charts on the dark aurora background
@@ -59,15 +59,88 @@ def style_chart(fig):
     return fig
 
 # ─────────────────────────────────────────────────────────────────────────────
-# load the data
+# Load and preprocess the improved tourism dataset
 # ─────────────────────────────────────────────────────────────────────────────
 
 @st.cache_data(ttl=300)
 def load_data(path: str = DATASET_PATH) -> pd.DataFrame:
     if not os.path.exists(path):
         return pd.DataFrame()
-    df = pd.read_csv(path, parse_dates=["Date"])
-    df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+    
+    df = pd.read_csv(path)
+    
+    # ── Datetime Parsing ──────────────────────────────────────────────────
+    if "Date" in df.columns:
+        df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+    
+    # ── Missing Value Handling ────────────────────────────────────────────
+    # Weekly_Off: 91k nulls — fill with 0 (no weekly off)
+    if "Weekly_Off" in df.columns:
+        df["Weekly_Off"] = pd.to_numeric(df["Weekly_Off"], errors="coerce").fillna(0)
+    
+    # Review_Count_Lakhs: ~1.5k nulls — fill with median
+    if "Review_Count_Lakhs" in df.columns:
+        df["Review_Count_Lakhs"] = pd.to_numeric(df["Review_Count_Lakhs"], errors="coerce")
+        df["Review_Count_Lakhs"] = df["Review_Count_Lakhs"].fillna(df["Review_Count_Lakhs"].median())
+    
+    # Rating: ~1.5k nulls — fill with Google_Rating where available
+    if "Rating" in df.columns and "Google_Rating" in df.columns:
+        df["Rating"] = pd.to_numeric(df["Rating"], errors="coerce")
+        df["Rating"] = df["Rating"].fillna(df["Google_Rating"])
+    
+    # Special_Event: 64k nulls — fill with "None" (no event)
+    if "Special_Event" in df.columns:
+        df["Special_Event"] = df["Special_Event"].fillna("None")
+    
+    # ── Feature Engineering ───────────────────────────────────────────────
+    # Month number for ML ordering
+    month_order = {"January": 1, "February": 2, "March": 3, "April": 4,
+                   "May": 5, "June": 6, "July": 7, "August": 8,
+                   "September": 9, "October": 10, "November": 11, "December": 12}
+    if "Month" in df.columns:
+        df["Month_Num"] = df["Month"].map(month_order).fillna(0).astype(int)
+    
+    # Binary event indicator for ML
+    if "Special_Event" in df.columns:
+        df["Is_Event"] = (df["Special_Event"] != "None").astype(int)
+    
+    # Binary airport indicator for ML
+    if "Airport_Within_50km" in df.columns:
+        df["Has_Airport"] = (df["Airport_Within_50km"] == "Yes").astype(int)
+    
+    # ── Numeric Column Enforcement ────────────────────────────────────────
+    numeric_cols = ["Google_Rating", "Ticket_Price", "Revenue",
+                    "Visitors_Count", "Hotel_Occupancy_Rate"]
+    for col in numeric_cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+    
+    # ── Duplicate Handling ────────────────────────────────────────────────
+    df.drop_duplicates(inplace=True)
+    
+    # ── Advanced Auto-Cleaning (Documentation & Processing) ───────────────
+    # Cap extreme outliers (99.5th percentile) to ensure ML forecasting stability
+    if "Revenue" in df.columns and len(df) > 1000:
+        rev_cap = int(df["Revenue"].quantile(0.995))
+        df.loc[df["Revenue"] > rev_cap, "Revenue"] = rev_cap
+        
+    if "Visitors_Count" in df.columns and len(df) > 1000:
+        vis_cap = int(df["Visitors_Count"].quantile(0.995))
+        df.loc[df["Visitors_Count"] > vis_cap, "Visitors_Count"] = vis_cap
+        
+    # Ensure Revenue-to-Visitor consistency
+    if all(c in df.columns for c in ["Revenue", "Visitors_Count", "Ticket_Price"]):
+        safe_vis = df["Visitors_Count"].clip(lower=1)
+        rpv = df["Revenue"] / safe_vis
+        
+        # Flag unrealistic per-visitor spend (e.g., > ₹5000 or < ₹5)
+        unrealistic = (rpv > 5000) | (rpv < 5)
+        if unrealistic.sum() > 0:
+            # Re-calculate revenue with a realistic multiplier based on ticket presence
+            df.loc[unrealistic, "Revenue"] = (
+                df.loc[unrealistic, "Visitors_Count"] * 100
+            ).astype(int)
+
     return df
 
 def save_uploaded_dataset(uploaded_file) -> str:
