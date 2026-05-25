@@ -2,14 +2,14 @@
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ai-driven-tourism-forecasting-prediction-system.streamlit.app/)
 
-## 🌍 Overview
+## Overview
 Welcome to the **AI-Driven Tourism Intelligence System**. This project is an enterprise-grade SaaS application designed to help travel agencies, local governments, and tourists anticipate travel demand, predict overcrowding, and intelligently manage destination capacities across India.
 
 By combining the predictive power of **XGBoost Machine Learning** with the conversational intelligence of **Generative AI (Groq)**, this system transforms raw, messy tourism data into actionable, real-world strategies.
 
 ---
 
-## 🎯 Problem Statement
+## Problem Statement
 Global tourism is rebounding at an unprecedented scale, leading to a critical issue: **Destination Overcrowding (Overtourism)**.
 - **Tourists** suffer from degraded experiences, long wait times, and inflated costs.
 - **Local Governments** struggle to manage infrastructure, preserve historical monuments, and maintain ecological balance.
@@ -19,7 +19,7 @@ Global tourism is rebounding at an unprecedented scale, leading to a critical is
 
 ---
 
-## 🛠️ Full Technology Stack
+## Full Technology Stack
 
 This application is built using a modern Python-centric data stack:
 
@@ -32,18 +32,18 @@ This application is built using a modern Python-centric data stack:
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
-*   **🔮 Trip Overcrowding Predictor (ML):** Uses a highly optimized XGBoost Regressor to predict the exact number of daily visitors based on weather, season, pricing, and historical patterns.
-*   **🤖 Generative AI Travel Assistant:** A built-in Groq-powered chatbot that acts as a 24/7 travel agent, building itineraries, answering budget queries, and providing local insights.
-*   **🚨 AI Crowd Management Alerts:** Automatically flags high-risk states based on demand forecasting and uses GenAI to generate unique, actionable crowd-control strategies for local authorities.
-*   **📊 Enterprise BI Dashboard:** Interactive Plotly visualizations (Sankey diagrams, violin plots, and correlation heatmaps) to understand the underlying physics of tourism behavior.
-*   **🛠️ End-to-End Data Pipeline:** A fully documented, Pandas-driven data engineering pipeline that cleans raw, messy data before feeding it into the ML models.
-*   **🗺️ Interactive Map Explorer:** A geographic visualization tool to explore destination hotspots across all Indian states and Union Territories.
+*   **Trip Overcrowding Predictor (ML):** Uses a highly optimized XGBoost Regressor to predict the exact number of daily visitors based on weather, season, pricing, and historical patterns.
+*   **Generative AI Travel Assistant:** A built-in Groq-powered chatbot that acts as a 24/7 travel agent, building itineraries, answering budget queries, and providing local insights.
+*   **AI Crowd Management Alerts:** Automatically flags high-risk states based on demand forecasting and uses GenAI to generate unique, actionable crowd-control strategies for local authorities.
+*   **Enterprise BI Dashboard:** Interactive Plotly visualizations (Sankey diagrams, violin plots, and correlation heatmaps) to understand the underlying physics of tourism behavior.
+*   **End-to-End Data Pipeline:** A fully documented, Pandas-driven data engineering pipeline that cleans raw, messy data before feeding it into the ML models.
+*   **Interactive Map Explorer:** A geographic visualization tool to explore destination hotspots across all Indian states and Union Territories.
 
 ---
 
-## 🔐 Role-Based Access Control (RBAC)
+## Role-Based Access Control (RBAC)
 
 To simulate enterprise deployment, the system features a robust Authentication system with two distinct permission levels:
 
@@ -58,7 +58,7 @@ To simulate enterprise deployment, the system features a robust Authentication s
 
 ---
 
-## 🧠 Machine Learning & Data Pipeline
+## Machine Learning & Data Pipeline
 
 This project prides itself on a robust, transparent data engineering and machine learning architecture.
 
@@ -79,7 +79,7 @@ The cleaned data (`improved_tourism_dataset.csv`) is ingested by an **XGBoost Re
 
 ---
 
-## 🏗️ Project Structure & Architecture
+## Project Structure & Architecture
 
 ```text
 AI_Tourism/
@@ -103,7 +103,7 @@ AI_Tourism/
 
 ---
 
-## 💼 Real-World Applications & Advantages
+## Real-World Applications & Advantages
 
 1. **For Travel Agencies:** Optimize pricing strategies and redirect clients from overcrowded hotspots to "Hidden Gems" (high rating, low cost) using the Value Proposition Matrix.
 2. **For Local Governments:** Use the AI-generated Crowd Management strategies to proactively deploy resources, adjust entry fees, or implement timed-entry systems *before* a crisis occurs.
@@ -111,7 +111,7 @@ AI_Tourism/
 
 ---
 
-## 💻 Installation & Usage
+## Installation & Usage
 
 1. **Clone the repository:**
    ```bash
