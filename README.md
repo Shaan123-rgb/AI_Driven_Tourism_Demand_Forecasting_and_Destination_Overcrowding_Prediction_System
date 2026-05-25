@@ -23,11 +23,11 @@ Global tourism is rebounding at an unprecedented scale, leading to a critical is
 
 This application is built using a modern Python-centric data stack:
 
-- **Frontend & UI:** Streamlit (Custom Glassmorphism CSS, Dark Mode)
+- **Frontend & UI:** Streamlit (Custom CSS, Dark Mode)
 - **Machine Learning Engine:** XGBoost (`xgboost>=2.0.0`), Scikit-Learn
 - **Data Engineering & Manipulation:** Pandas, NumPy
 - **Generative AI Integration:** Groq API (Llama-3.1-8B model)
-- **Business Intelligence (BI) Visualizations:** Plotly (Interactive Scatter, Sankey, Violin plots)
+- **Business Intelligence (BI) Visualizations:** Plotly (Interactive Scatter, Sankey, Violin plots,etc)
 - **Deployment & Cloud:** Streamlit Community Cloud, Git/GitHub
 
 ---
@@ -89,7 +89,7 @@ AI_Tourism/
 ├── chatbot.py                  # Groq API integration for GenAI features
 ├── utils.py                    # Data loading and core utility functions
 ├── auth.py                     # Session state and secure user authentication
-├── styles.py                   # Custom CSS (Glassmorphism & Dark Mode styling)
+├── styles.py                   # Custom CSS (Dark Mode styling)
 ├── requirements.txt            # Python dependencies
 │
 ├── dataset/                    # Data Storage
