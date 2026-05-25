@@ -1,5 +1,7 @@
 # AI-Driven Tourism Demand Forecasting and Destination Overcrowding Prediction System
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ai-driven-tourism-forecasting-prediction-system.streamlit.app/)
+
 ## 🌍 Overview
 Welcome to the **AI-Driven Tourism Intelligence System**. This project is an enterprise-grade SaaS application designed to help travel agencies, local governments, and tourists anticipate travel demand, predict overcrowding, and intelligently manage destination capacities across India.
 
