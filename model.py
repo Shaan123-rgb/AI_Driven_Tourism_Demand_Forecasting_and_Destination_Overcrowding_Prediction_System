@@ -117,6 +117,7 @@ def _prepare_features(df: pd.DataFrame):
 def train_models():
     """Train XGBoost regression model for demand forecasting.
     Cached as a resource so it persists across reruns.
+    Cache busted for new 86% R2 dataset.
     """
     df = load_data()
     if df.empty:
