@@ -22,8 +22,12 @@ def clean_data(input_path="dataset/raw_tourism_dataset.csv", output_path="datase
         if col in df.columns:
             # Strip trailing/leading whitespaces and convert to Title Case
             df[col] = df[col].astype(str).str.strip().str.title()
-            # Replace common typos
-            df[col] = df[col].replace({"Maharastra": "Maharashtra"})
+            # Replace common typos and merge UTs
+            df[col] = df[col].replace({
+                "Maharastra": "Maharashtra",
+                "Dadra And Nagar Haveli": "Dadra & Nagar Haveli and Daman & Diu",
+                "Daman And Diu": "Dadra & Nagar Haveli and Daman & Diu"
+            })
             
     # ── 2. Missing Value Imputation (Handling NaNs) ─────────────────────
     print("Imputing missing values for robust ML inference...")
